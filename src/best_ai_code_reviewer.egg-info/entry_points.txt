@@ -1,0 +1,2 @@
+[console_scripts]
+review-bench-score = reviewforge.benchmark.cli:main

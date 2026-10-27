@@ -1,0 +1,80 @@
+Metadata-Version: 2.4
+Name: best-ai-code-reviewer
+Version: 0.1.0
+Summary: Benchmark-first foundation for a repository-aware AI code reviewer
+License: Proprietary - replace with project license before distribution
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+Provides-Extra: api
+Requires-Dist: fastapi>=0.115; extra == "api"
+Requires-Dist: uvicorn[standard]>=0.30; extra == "api"
+Provides-Extra: test
+Requires-Dist: pytest>=8.0; extra == "test"
+Requires-Dist: fastapi>=0.115; extra == "test"
+Requires-Dist: httpx2>=2.16; extra == "test"
+
+# Best AI Code Reviewer — Starter Foundation
+
+This is an **engineering starter**, not a completed AI code reviewer and not a benchmark result. It establishes two trustworthy primitives first:
+
+1. Parse changed lines from a unified Git diff so future inline findings can be anchored and validated.
+2. Score review predictions against adjudicated gold-finding matches, with explicit false-positive accounting.
+
+No model provider is configured. The API, if installed, intentionally reports that review execution is not configured rather than inventing findings or pretending an empty review means the PR is safe.
+
+## Quick start
+
+Requires Python 3.11+.
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -e '.[test,api]'
+pytest
+uvicorn reviewforge.api:app --reload
+```
+
+API health: `GET /health`.
+
+Diff inspection endpoint: `POST /v1/diff/changed-lines` with JSON `{"diff": "... unified diff ..."}`.
+
+## Benchmark scoring format
+
+`gold.jsonl` — one record for each adjudicated issue:
+
+```json
+{"pr_id":"repo#123","gold_id":"G-001","severity":"high","category":"correctness"}
+```
+
+`predictions.jsonl` — one record for each prediction. `matched_gold_id` must come from a documented matcher and/or human adjudication; leave it `null` for an unmatched prediction. Do not populate it with a guessed string match and then call the result semantic accuracy.
+
+```json
+{"pr_id":"repo#123","prediction_id":"P-001","matched_gold_id":"G-001","severity":"high","category":"correctness"}
+{"pr_id":"repo#123","prediction_id":"P-002","matched_gold_id":null,"severity":"low","category":"maintainability"}
+```
+
+Run:
+
+```bash
+review-bench-score --gold gold.jsonl --predictions predictions.jsonl
+```
+
+Scoring conventions:
+- One prediction can match at most one gold issue.
+- A gold issue can be credited at most once.
+- Duplicate predictions for the same gold issue count as false positives after the first match.
+- Unmatched/invalid gold references count as false positives.
+- Unmatched gold issues count as false negatives.
+
+This implementation is deliberately an **adjudicated-match scorer**, not an automatic semantic matcher. The next benchmark step is to add a calibrated matcher/judge pipeline audited against blind human annotations, plus confidence intervals and per-language/severity slices.
+
+## Architectural rules
+
+- Repository content is untrusted input.
+- Review mode must remain read-only by default.
+- Never run arbitrary PR scripts in the API process.
+- Patch generation and testing need a separate isolated sandbox and explicit authorization.
+- “No findings” is not proof of safety.
+- Keep model, prompt, toolchain, dataset, and scoring versions with every run.
+
+See `docs/` for the initial engineering boundaries. The full project charter is provided separately as `BEST_AI_CODE_REVIEWER_2026_MASTER_PLAN.md`.

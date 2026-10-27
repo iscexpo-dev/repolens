@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=75", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "best-ai-code-reviewer"
+version = "0.1.0"
+description = "Benchmark-first foundation for a repository-aware AI code reviewer"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Proprietary - replace with project license before distribution" }
+dependencies = []
+
+[project.optional-dependencies]
+api = ["fastapi>=0.115", "uvicorn[standard]>=0.30"]
+test = ["pytest>=8.0", "fastapi>=0.115", "httpx2>=2.16"]
+
+[project.scripts]
+review-bench-score = "reviewforge.benchmark.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
